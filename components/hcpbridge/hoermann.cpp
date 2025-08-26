@@ -36,7 +36,7 @@ HoermannGarageEngine &HoermannGarageEngine::getInstance()
   return instance;
 }
 
-void HoermannGarageEngine::setup(int8_t rx, int8_t tx, int8_t rts)
+void HoermannGarageEngine::setup(int8_t rx, int8_t tx, int8_t rts, int slave_id)
 {
   RS485.begin(57600, SERIAL_8E1, rx, tx);
   if (rts == -1) {
@@ -44,7 +44,7 @@ void HoermannGarageEngine::setup(int8_t rx, int8_t tx, int8_t rts)
   } else {
     mb.begin(&RS485, rts, true);
   }
-  mb.slave(SLAVE_ID);
+  mb.slave(slave_id);
 
   xTaskCreatePinnedToCore(
       modbusServeTask, /* Function to implement the task */

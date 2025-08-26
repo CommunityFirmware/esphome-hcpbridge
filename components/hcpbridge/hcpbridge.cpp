@@ -8,9 +8,10 @@ void HCPBridge::setup() {
   int8_t rx = this->rx_pin_ == nullptr ? PIN_RXD : this->rx_pin_->get_pin();
   int8_t tx = this->tx_pin_ == nullptr ? PIN_TXD : this->tx_pin_->get_pin();
   int8_t rts = this->rts_pin_ == nullptr ? -1 : this->rts_pin_->get_pin();
+  int slave_id = this->slave_id_;
 
   this->engine = &HoermannGarageEngine::getInstance();
-  this->engine->setup(rx, tx, rts);
+  this->engine->setup(rx, tx, rts, slave_id);
 }
 void HCPBridge::add_on_state_callback(std::function<void()> &&callback, const char *tag) {
   auto wrapped_callback = [callback, tag]() {

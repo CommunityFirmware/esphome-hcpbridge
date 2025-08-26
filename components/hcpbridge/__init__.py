@@ -8,6 +8,7 @@ from esphome.const import (
 )
 
 CONF_RTS_PIN = "rts_pin"
+CONF_SLAVE_ID = "slave_id"
 
 hcpbridge_ns = cg.esphome_ns.namespace("hcpbridge")
 HCPBridge = hcpbridge_ns.class_("HCPBridge", cg.PollingComponent)
@@ -20,6 +21,7 @@ CONFIG_SCHEMA = cv.All(
         cv.Optional(CONF_RX_PIN): pins.gpio_input_pin_schema,
         cv.Optional(CONF_TX_PIN): pins.gpio_output_pin_schema,
         cv.Optional(CONF_RTS_PIN): pins.gpio_output_pin_schema,
+        cv.Optional(CONF_SLAVE_ID, default=2): cv.int_range(1, 247),
     }).extend(cv.polling_component_schema("500ms")),
 )
 
@@ -36,3 +38,5 @@ async def to_code(config):
   if CONF_RTS_PIN in config:
     rts_pin = await cg.gpio_pin_expression(config[CONF_RTS_PIN])
     cg.add(var.set_rts_pin(rts_pin))
+  if CONF_SLAVE_ID in config:
+    cg.add(var.set_slave_id(config[CONF_SLAVE_ID]))
