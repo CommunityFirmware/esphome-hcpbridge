@@ -1,116 +1,52 @@
-# Variables to change the name of the entities
 substitutions:
   name: "hcpbridge"
-  friendly_name: "Garage Door"
-  connection_state: "${name} Connected"
-  relay_name: "${friendly_name} Relay state"
-  light: "${friendly_name} Light"
-  btn_vent: "${friendly_name} Vent" 
-  btn_half: "${friendly_name} Half" 
-  btn_impulse: "${friendly_name} Impulse" 
-  sen_txt: "${friendly_name} State" 
-  sw_vent: "${friendly_name} Venting" 
-  sw_half: "${friendly_name} Open Half" 
-  sen_pos: "${friendly_name} Position" 
+  friendly_name: "HCPBridge"
+  connection_state: "HCP2 Bus"
+  relay_name: "External Relay"
+  light: "Light"
+  btn_vent: "Vent"
+  btn_half: "Open Half"
+  btn_impulse: "Impulse"
+  sen_txt: "State"
+  sw_vent: "Ventilation"
+  sw_half: "Half-Open"
+  sen_pos: "Position"
 
 esphome:
   name: "${name}"
   friendly_name: "${friendly_name}"
+  comment: "HCPBridge for Hörmann Supramatic 4"
+  min_version: 2026.5.1
   libraries:
     - emelianov/modbus-esp8266
   platformio_options:
-    board_build.f_cpu: 240000000L
+    lib_compat_mode: "off"
 
 external_components:
-    source: github://14yannick/esphome-hcpbridge
-    refresh: 0s
+   - source:
+      type: local
+      path: components
 
 esp32:
-  board: adafruit_feather_esp32s3 #set your board
+  variant: esp32s3
+  cpu_frequency: 240MHZ
+  flash_size: 4MB
   framework:
-    type: arduino
+    type: esp-idf
+    version: recommended
+    components:
+      - espressif/arduino-esp32==3.3.10
 
-hcpbridge:
-  id: hcpbridge_id
-  rx_pin: 18 # optional, default=18
-  tx_pin: 17 # optional, default=17
-  #rts_pin : 1 # optional RTS pin to use if hardware automatic control flow is not available.
-
-cover:
-  - platform: hcpbridge
-    name: ${friendly_name}
-    device_class: garage
-    id: garagedoor_cover
-
-binary_sensor:
-  - platform: hcpbridge
-    is_connected:
-      name: "${connection_state}"
-      id: sensor_connected
-    relay_state:
-      name: "${relay_name}"
-      id: sensor_relay
-      #on_state:
-      #create your automation based on Garage Door Relay state
-
-output:
-  - platform: hcpbridge
-    id: output_light
-
-light:
-  - platform: hcpbridge
-    id: gd_light
-    output: output_light
-    name: ${light}
-
-button:
-  - platform: hcpbridge
-    vent_button:
-      id: button_vent
-      name: "${btn_vent}"
-    impulse_button:
-      id: button_impulse
-      name: "${btn_impulse}"
-    half_button:
-      id: button_half
-      name: "${btn_half}"
-
-text_sensor:
-  - platform: hcpbridge
-    id: sensor_templ_state
-    name: "${sen_txt}"
-#    filters:
-#      - substitute:
-#        - "Opening -> your text"
-#        - "Move venting -> your text"
-#        - "Move half -> your text"
-#        - "Closing -> your text"
-#        - "Open -> your text"
-#        - "Closed -> your text"
-#        - "Stopped -> your text"
-#        - "Half open -> your text"
-#        - "Venting -> your text"
-#        - "Unknown -> your text"
-
-switch:
-  - platform: hcpbridge
-    vent_switch:
-      id: switch_vent
-      name: "${sw_vent}"
-      restore_mode: disabled
-    half_switch:
-      id: half_switch
-      name: "${sw_half}"
-      restore_mode: disabled
-
-sensor:
-  - platform: hcpbridge
-    id: sensor_position
-    name: ${sen_pos}
+logger:
+  level: WARN
+  hardware_uart: UART0
+  # Important: Disable UART1 logging to avoid hardware errors on main UART0
+  #baud_rate: 0
 
 api:
   encryption:
     key: !secret api_key
+  reboot_timeout: 0s
   services:
     - service: go_to_open
       then:
@@ -132,14 +68,98 @@ api:
       then:
         - cover.toggle: garagedoor_cover
 
+ota:
+  - platform: esphome
+
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  power_save_mode: none
+  reboot_timeout: 0s
+  enable_rrm: True
+  use_psram: True
 
-# Enable logging
-logger:
-  level: WARN
+psram:
+  mode: quad
+  speed: 80MHz
+  ignore_not_found: False
 
-# Example configuration entry
-ota:
-  - platform: esphome
+network:
+    enable_ipv6: True
+
+hcpbridge:
+  id: hcpbridge_main
+  rx_pin: 18 # optional, default=18
+  tx_pin: 17 # optional, default=17
+  slave_id: 69
+  #rts_pin : 1 # optional RTS pin to use if hardware automatic control flow is not available.
+
+debug:
+  update_interval: 30s
+
+cover:
+  - platform: hcpbridge
+    name: "Garage Door"
+    device_class: garage
+    id: garagedoor_cover
+
+binary_sensor:
+  - platform: hcpbridge
+    is_connected:
+      name: "${connection_state}"
+      id: sensor_connected
+    relay_state:
+      name: "${relay_name}"
+      id: sensor_relay
+
+output:
+  - platform: hcpbridge
+    id: output_light
+
+light:
+  - platform: hcpbridge
+    id: gd_light
+    output: output_light
+    name: "${light}"
+
+button:
+  - platform: hcpbridge
+    vent_button:
+      id: button_vent
+      name: "${btn_vent}"
+    impulse_button:
+      id: button_impulse
+      name: "${btn_impulse}"
+    half_button:
+      id: button_half
+      name: "${btn_half}"
+  - platform: restart
+    name: "Restart"
+
+text_sensor:
+  - platform: hcpbridge
+    id: sensor_templ_state
+    name: "${sen_txt}"
+  - platform: debug
+    reset_reason:
+      name: "Reset Reason"
+
+switch:
+  - platform: hcpbridge
+    vent_switch:
+      id: switch_vent
+      name: "${sw_vent}"
+      restore_mode: disabled
+    half_switch:
+      id: switch_half
+      name: "${sw_half}"
+      restore_mode: disabled
+
+sensor:
+  - platform: hcpbridge
+    id: sensor_position
+    name: "${sen_pos}"
+  - platform: debug
+    free:
+      name: "Heap Free"
+

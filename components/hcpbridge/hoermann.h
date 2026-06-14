@@ -2,7 +2,7 @@
 
 #ifndef HOERMANN_H_
 #define HOERMANN_H_
-#define MODBUSRTU_DEBUG 1
+// #define MODBUSRTU_DEBUG 1  // Disabled: causes Serial.print() calls in modbus library that may not be safe
 
 #include <Arduino.h>
 #include <Stream.h>
@@ -13,16 +13,26 @@
 #define SIMULATEKEYPRESSDELAYMS 100
 #define DEADREPORTTIMEOUT 60000
 
+// Chips with 3+ HP UARTs (ESP32, ESP32-S3): Serial2 is a full HP UART.
+// Chips with only 2 HP UARTs (ESP32-C6, C3, H2): Serial2 maps to LP_UART
+// which has a limited 16-byte FIFO, not suitable for Modbus timing.
+// Use Serial1 (HP UART1, 128-byte FIFO) instead.
+#if SOC_UART_HP_NUM > 2
+#define RS485 Serial2
+#else
+#define RS485 Serial1
+#endif
+
 #define RS485 Serial2
 #ifdef CONFIG_IDF_TARGET_ESP32S3
 #define PIN_TXD 17
 #define PIN_RXD 18
 #else
 #define PIN_TXD 17 // UART 2 TXT - G17
-#define PIN_RXD 16 // UART 2 RXD - G16 
+#define PIN_RXD 16 // UART 2 RXD - G16
 #endif
 
-static const char *TAG_HCI = "HCI-BUS";
+static const char *TAG_HCI = "HCP-BUS";
 
 
 

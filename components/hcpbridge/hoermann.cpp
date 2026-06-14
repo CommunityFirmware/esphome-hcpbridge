@@ -46,15 +46,28 @@ void HoermannGarageEngine::setup(int8_t rx, int8_t tx, int8_t rts, int slave_id)
   }
   mb.slave(slave_id);
 
+  // On single-core devices (ESP32-C6, C3, H2), use a moderate task priority
+  // to avoid starving the main ESPHome loop task (priority 1).
+  // On dual-core devices, pin to core 1 with high priority so modbus
+  // runs independently from the main loop on core 0.
+#if defined(CONFIG_FREERTOS_UNICORE)
+  xTaskCreate(
+      modbusServeTask, /* Function to implement the task */
+      "ModBusTask",    /* Name of the task */
+      10000,           /* Stack size in words */
+      NULL,            /* Task input parameter */
+      5,               /* Priority - moderate for single-core */
+      &modBusTask);    /* Task handle. */
+#else
   xTaskCreatePinnedToCore(
       modbusServeTask, /* Function to implement the task */
       "ModBusTask",    /* Name of the task */
       10000,           /* Stack size in words */
       NULL,            /* Task input parameter */
-      // 1,  /* Priority of the task */
       configMAX_PRIORITIES - 1,
-      &modBusTask, /* Task handle. */
-      1);          /* Core where the task should run */
+      &modBusTask,     /* Task handle. */
+      1);              /* Core 1 - keeps core 0 free for ESPHome main loop */
+#endif
 
   // Required for Write
   mb.addHreg(0x9C41, 0, 0x03); // Commands
