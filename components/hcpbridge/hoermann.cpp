@@ -114,12 +114,6 @@ void HoermannGarageEngine::handleModbus()
 
 Modbus::ResultCode HoermannGarageEngine::onRequest(Modbus::FunctionCode fc, const Modbus::RequestData data)
 {
-  // Basic validation
-  if (data.regWriteCount > 10 || data.regReadCount > 10) {
-    ESP_LOGE(TAG_HCI, "Invalid register count: write=%d, read=%d", data.regWriteCount, data.regReadCount);
-    return Modbus::EX_ILLEGAL_VALUE;
-  }
-  
   this->state.recordModbusResponse();
 
   // Command Requst (Internal State representation)
@@ -149,12 +143,12 @@ Modbus::ResultCode HoermannGarageEngine::onRequest(Modbus::FunctionCode fc, cons
     mb.Reg(HREG(0x9CB9 + 0), (uint16_t)0x0000);
     mb.Reg(HREG(0x9CB9 + 1), (uint16_t)0x0005);
     mb.Reg(HREG(0x9CB9 + 2), (uint16_t)0x0430);
-    mb.Reg(HREG(0x9CB9 + 3), (uint16_t)0x10ff);
-    mb.Reg(HREG(0x9CB9 + 4), (uint16_t)0xa845);
+    mb.Reg(HREG(0x9CB9 + 3), (uint16_t)0x1000);
+    mb.Reg(HREG(0x9CB9 + 4), (uint16_t)0x0000);
   }
   else if (fc == Modbus::FC_WRITE_REGS && data.reg.address == 0x9D31)
   {
-    // ESP_LOGD("ON_REQ", "on Status Update (cnt: %d)",data.regCount);
+    ESP_LOGD("ON_REQ", "on Status Update (cnt: %d)",data.regCount);
   }
   else
   {
