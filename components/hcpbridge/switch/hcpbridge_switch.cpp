@@ -17,7 +17,7 @@ void HCPBridgeSwitchVent::on_event_triggered() {
     ESP_LOGW(TAG, "HCPBridgeSwitchVent::update() - Engine or parent is null");
     return;
   }
-  if (!this->parent_->engine->state->valid) {
+  if (!this->parent_->engine->state.valid) {
     if (!this->status_has_warning()) {
       ESP_LOGD(TAG, "HCPBridgeSwitchVent::update() - state is invalid");
       this->status_set_warning();
@@ -28,7 +28,7 @@ void HCPBridgeSwitchVent::on_event_triggered() {
     ESP_LOGD(TAG, "HCPBridgeSwitchVent::update() - clearing warning");
     this->status_clear_warning();
   }
-  bool is_venting = this->parent_->engine->state->state == HoermannState::State::VENT;
+  bool is_venting = this->parent_->engine->state.state == HoermannState::State::VENT;
 
   if (this->previousState_ != is_venting) {
     ESP_LOGD(TAG, "HCPBridgeSwitchVent::update() - state changed to %s", is_venting ? "VENT" : "NOT VENT");
@@ -39,14 +39,14 @@ void HCPBridgeSwitchVent::on_event_triggered() {
 
 void HCPBridgeSwitchVent::write_state(bool state) {
   if (state) {
-    if (this->parent_->engine->state->state != HoermannState::State::VENT) {
+    if (this->parent_->engine->state.state != HoermannState::State::VENT) {
       ESP_LOGD(TAG, "HCPBridgeSwitchVent::write_state() - Setting door to vent");
       this->parent_->engine->ventilationPositionDoor();
     } else {
       ESP_LOGD(TAG, "HCPBridgeSwitchVent::write_state() - Door already in vent state");
     }
   } else {
-    if (this->parent_->engine->state->state != HoermannState::State::CLOSED) {
+    if (this->parent_->engine->state.state != HoermannState::State::CLOSED) {
       ESP_LOGD(TAG, "HCPBridgeSwitchVent::write_state() - Closing door");
       this->parent_->engine->closeDoor();
     } else {
@@ -66,7 +66,7 @@ void HCPBridgeSwitchHalf::on_event_triggered() {
     ESP_LOGW(TAG, "HCPBridgeSwitchHalf::update() - Engine or parent is null");
     return;
   }
-  if (!this->parent_->engine->state->valid) {
+  if (!this->parent_->engine->state.valid) {
     if (!this->status_has_warning()) {
       ESP_LOGD(TAG, "HCPBridgeSwitchHalf::update() - state is invalid");
       this->status_set_warning();
@@ -77,7 +77,7 @@ void HCPBridgeSwitchHalf::on_event_triggered() {
     ESP_LOGD(TAG, "HCPBridgeSwitchHalf::update() - clearing warning");
     this->status_clear_warning();
   }
-  bool is_half_open = this->parent_->engine->state->state == HoermannState::State::HALFOPEN;
+  bool is_half_open = this->parent_->engine->state.state == HoermannState::State::HALFOPEN;
 
   if (this->previousState_ != is_half_open) {
     ESP_LOGD(TAG, "HCPBridgeSwitchHalf::update() - state changed to %s", is_half_open ? "HALF OPEN" : "NOT HALF OPEN");
@@ -88,14 +88,14 @@ void HCPBridgeSwitchHalf::on_event_triggered() {
 
 void HCPBridgeSwitchHalf::write_state(bool state) {
   if (state) {
-    if (this->parent_->engine->state->state != HoermannState::State::HALFOPEN) {
+    if (this->parent_->engine->state.state != HoermannState::State::HALFOPEN) {
       ESP_LOGD(TAG, "HCPBridgeSwitchHalf::write_state() - Setting door to half open");
       this->parent_->engine->halfPositionDoor();
     } else {
       ESP_LOGD(TAG, "HCPBridgeSwitchHalf::write_state() - Door already in half open state");
     }
   } else {
-    if (this->parent_->engine->state->state != HoermannState::State::CLOSED) {
+    if (this->parent_->engine->state.state != HoermannState::State::CLOSED) {
       ESP_LOGD(TAG, "HCPBridgeSwitchHalf::write_state() - Closing door");
       this->parent_->engine->closeDoor();
     } else {

@@ -7,6 +7,9 @@
 #include "esphome/core/log.h"
 #include "hoermann.h"
 
+// External declaration for the modbus task handle
+extern TaskHandle_t modBusTask;
+
 namespace esphome {
 namespace hcpbridge {
 
@@ -21,6 +24,13 @@ class HCPBridge : public PollingComponent {
   HoermannGarageEngine *engine;
   void add_on_state_callback(std::function<void()> &&callback, const char *tag);
   void add_prio_callback(std::function<void()> &&callback, const char *tag);
+  ~HCPBridge() {
+    // Clean up resources
+    if (modBusTask != nullptr) {
+      vTaskDelete(modBusTask);
+      modBusTask = nullptr;
+    }
+  }
 
  protected:
   InternalGPIOPin *tx_pin_;

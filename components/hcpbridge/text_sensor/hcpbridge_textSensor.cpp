@@ -13,8 +13,8 @@ void HCPBridgeTextSensor::setup() {
 
 void HCPBridgeTextSensor::on_event_triggered() {
   std::string stateText;
-  if (this->parent_ != nullptr && this->parent_->engine->state->state != this->previousState_) {
-    switch (this->parent_->engine->state->state) {
+  if (this->parent_ != nullptr && this->parent_->engine->state.state != this->previousState_) {
+    switch (this->parent_->engine->state.state) {
       case HoermannState::OPENING:
         stateText = "Opening";
         break;
@@ -46,7 +46,7 @@ void HCPBridgeTextSensor::on_event_triggered() {
         stateText = "Unknown";
         break;
     }
-    this->previousState_ = this->parent_->engine->state->state;
+    this->previousState_ = this->parent_->engine->state.state;
     ESP_LOGD(TAG, "HCPBridgeTextSensor::update() - %s", stateText.c_str());
     this->publish_state(stateText);
   }

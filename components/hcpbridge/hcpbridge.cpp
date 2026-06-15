@@ -23,9 +23,20 @@ void HCPBridge::add_on_state_callback(std::function<void()> &&callback, const ch
   this->state_callback_.add(std::move(wrapped_callback));
 }
 
+void HCPBridge::add_prio_callback(std::function<void()> &&callback, const char *tag) {
+  auto wrapped_callback = [callback, tag]() {
+    auto start = millis();
+    callback();
+    auto end = millis();
+    ESP_LOGD(TAG, "Priority callback executed in %u ms [Tag: %s]", end - start, tag);
+  };
+  // Add to a priority callback manager if needed, or just add to regular callbacks
+  this->state_callback_.add(std::move(wrapped_callback));
+}
+
 void HCPBridge::update() {
-  if (this->engine->state->changed) {
-    this->engine->state->clearChanged();
+  if (this->engine->state.changed) {
+    this->engine->state.clearChanged();
     this->state_callback_.call();
   }
 }

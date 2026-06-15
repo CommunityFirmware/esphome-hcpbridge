@@ -22,8 +22,6 @@
 #else
 #define RS485 Serial1
 #endif
-
-#define RS485 Serial2
 #ifdef CONFIG_IDF_TARGET_ESP32S3
 #define PIN_TXD 17
 #define PIN_RXD 18
@@ -112,7 +110,7 @@ public:
 class HoermannGarageEngine
 {
 public:
-    HoermannState *state = new HoermannState();
+    HoermannState state;
 
     static HoermannGarageEngine& getInstance();
 

@@ -20,7 +20,7 @@ void HCPBridgeSensor::update_state(float value) {
 }
 
 void HCPBridgeSensor::on_event_triggered() {
-  float current_position = this->parent_->engine->state->currentPosition;
+  float current_position = this->parent_->engine->state.currentPosition;
   
   if (this->previousPosition_ != current_position) {
     ESP_LOGD(TAG, "Position changed: %.2f -> %.2f", this->previousPosition_, current_position);

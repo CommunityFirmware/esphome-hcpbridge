@@ -15,10 +15,10 @@ public:
   void set_hcpbridge_parent(HCPBridge *parent) { this->parent_ = parent; }
   void setup() override;
   void on_event_triggered();
-  bool get_light_state() {return this->parent_->engine->state->lightOn; }
+  bool get_light_state() {return this->parent_->engine->state.lightOn; }
   void set_light_state(bool state) {this->parent_->engine->turnLight(state);}
-  bool get_relay_state() {return this->parent_->engine->state->relayOn; }
-  HoermannState::State get_cover_state() {return this->parent_->engine->state->state;}
+  bool get_relay_state() {return this->parent_->engine->state.relayOn; }
+  HoermannState::State get_cover_state() {return this->parent_->engine->state.state;}
   // Home Assistant service handler
   void on_go_to_half();
   void on_go_to_open();

@@ -12,8 +12,8 @@ void HCPBridgeRelaySensor::setup() {
 }
 
 void HCPBridgeRelaySensor::on_event_triggered() {
-    if (this->parent_->engine->state->relayOn != this->state){
-        this->publish_state(this->parent_->engine->state->relayOn);
+    if (this->parent_->engine->state.relayOn != this->state){
+        this->publish_state(this->parent_->engine->state.relayOn);
     }
 }
 void HCPBridgeRelaySensor::dump_config(){
@@ -26,8 +26,8 @@ void HCPBridgeIsConnected::setup() {
 }
 
 void HCPBridgeIsConnected::on_event_triggered() {
-    if (this->parent_->engine->state->valid != this->state){
-        this->publish_state(this->parent_->engine->state->valid);
+    if (this->parent_->engine->state.valid != this->state){
+        this->publish_state(this->parent_->engine->state.valid);
     }
 }
 void HCPBridgeIsConnected::dump_config(){

@@ -27,11 +27,11 @@ void HCPBridgeLight::write_state(light::LightState *state) {
 }
 
 void HCPBridgeLight::on_event_triggered() {
-  if (this->parent_->engine->state->valid &&
-      this->state_->current_values.is_on() != this->parent_->engine->state->lightOn) {
+  if (this->parent_->engine->state.valid &&
+      this->state_->current_values.is_on() != this->parent_->engine->state.lightOn) {
     // Adjust the state of the light based on the external lightOn state
     ESP_LOGD(TAG, "HCPBridgeBinaryLight::update() - adjusting state");
-    if (this->parent_->engine->state->lightOn) {
+    if (this->parent_->engine->state.lightOn) {
       this->state_->turn_on().perform();
     } else {
       this->state_->turn_off().perform();

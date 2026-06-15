@@ -38,7 +38,15 @@ HoermannGarageEngine &HoermannGarageEngine::getInstance()
 
 void HoermannGarageEngine::setup(int8_t rx, int8_t tx, int8_t rts, int slave_id)
 {
+  // Initialize RS485 serial
   RS485.begin(57600, SERIAL_8E1, rx, tx);
+  
+  // Check if serial is available
+  if (!RS485) {
+    ESP_LOGE(TAG_HCI, "Failed to initialize RS485 serial");
+    return;
+  }
+  
   if (rts == -1) {
     mb.begin(&RS485);
   } else {
@@ -106,7 +114,13 @@ void HoermannGarageEngine::handleModbus()
 
 Modbus::ResultCode HoermannGarageEngine::onRequest(Modbus::FunctionCode fc, const Modbus::RequestData data)
 {
-  this->state->recordModbusResponse();
+  // Basic validation
+  if (data.regWriteCount > 10 || data.regReadCount > 10) {
+    ESP_LOGE(TAG_HCI, "Invalid register count: write=%d, read=%d", data.regWriteCount, data.regReadCount);
+    return Modbus::EX_ILLEGAL_VALUE;
+  }
+  
+  this->state.recordModbusResponse();
 
   // Command Requst (Internal State representation)
   if (fc == Modbus::FC_READWRITE_REGS && data.regWrite.address == 0x9C41 && data.regWriteCount == 0x02 && data.regRead.address == 0x9CB9 && data.regReadCount == 0x08)
@@ -144,11 +158,11 @@ Modbus::ResultCode HoermannGarageEngine::onRequest(Modbus::FunctionCode fc, cons
   }
   else
   {
-    this->state->debugMessage = "unknown function code fc=" + fc;
-    this->state->debMessage = true;
+    this->state.debugMessage = "unknown function code fc=" + fc;
+    this->state.debMessage = true;
     ESP_LOGW(TAG_HCI, "unknown function code fc=%x", fc);
   }
-  this->state->setValid(true);
+  this->state.setValid(true);
   return Modbus::EX_SUCCESS;
 }
 
@@ -189,18 +203,18 @@ uint16_t HoermannGarageEngine::onDoorPositonChanged(TRegister *reg, uint16_t val
   // on First Byte changed (current)
   if ((reg->value & 0x00FF) != (val & 0x00FF))
   {
-    this->state->setCurrentPosition((float)(val & 0x00FF) / 200.0f);
-    if ((this->state->gotoPosition > 0.0f && this->state->state == HoermannState::State::CLOSING && this->state->gotoPosition >= this->state->currentPosition) ||
-        (this->state->gotoPosition > 0.0f && this->state->state == HoermannState::State::OPENING && this->state->gotoPosition <= this->state->currentPosition))
+    this->state.setCurrentPosition((float)(val & 0x00FF) / 200.0f);
+    if ((this->state.gotoPosition > 0.0f && this->state.state == HoermannState::State::CLOSING && this->state.gotoPosition >= this->state.currentPosition) ||
+        (this->state.gotoPosition > 0.0f && this->state.state == HoermannState::State::OPENING && this->state.gotoPosition <= this->state.currentPosition))
     {
       this->stopDoor();
-      this->state->setGotoPosition(0.0f);
+      this->state.setGotoPosition(0.0f);
     }
   }
   // on Second Byte changed (target)
   if ((reg->value & 0xFF00) != (val & 0xFF00))
   {
-    this->state->setTargetPosition((float)((val & 0xFF00) >> 8) / 200.0f);
+    this->state.setTargetPosition((float)((val & 0xFF00) >> 8) / 200.0f);
   }
 
   return val;
@@ -216,35 +230,35 @@ uint16_t HoermannGarageEngine::onCurrentStateChanged(TRegister *reg, uint16_t va
     switch ((val & 0xFF00) >> 8)
     {
     case 0x1:
-      this->state->setState(HoermannState::State::OPENING);
+      this->state.setState(HoermannState::State::OPENING);
       break;
     case 0x2:
-      this->state->setState(HoermannState::State::CLOSING);
+      this->state.setState(HoermannState::State::CLOSING);
       break;
     case 0x20:
-      this->state->setState(HoermannState::State::OPEN);
+      this->state.setState(HoermannState::State::OPEN);
       break;
     case 0x40:
-      this->state->setState(HoermannState::State::CLOSED);
+      this->state.setState(HoermannState::State::CLOSED);
       break;
     case 0x80:
-      this->state->setState(HoermannState::State::HALFOPEN);
+      this->state.setState(HoermannState::State::HALFOPEN);
       break;
     case 0x09:
-      this->state->setState(HoermannState::State::MOVE_VENTING);
+      this->state.setState(HoermannState::State::MOVE_VENTING);
       break;
     case 0x05:
-      this->state->setState(HoermannState::State::MOVE_HALF);
+      this->state.setState(HoermannState::State::MOVE_HALF);
       break;
     case 0x0A:
-      this->state->setState(HoermannState::State::VENT);
+      this->state.setState(HoermannState::State::VENT);
       break;
     case 0x00:
       // Additional check on the low byte when the high byte is 0x00
       if ((val & 0x00FF) == 0x61) {
-        this->state->setState(HoermannState::State::VENT);
+        this->state.setState(HoermannState::State::VENT);
       } else {
-        this->state->setState(HoermannState::State::STOPPED);
+        this->state.setState(HoermannState::State::STOPPED);
       } 
       break;
     default:
@@ -266,14 +280,14 @@ uint16_t HoermannGarageEngine::onRegSevenChanged(TRegister *reg, uint16_t val)
 {
   if ((reg->value & 0xFF00) != (val & 0xFF00)){
     // 0x02 happen when relay menu 30 is set to 06, 07, 10 
-    this->state->setRelayOn((val & 0xFF00) >> 8 == 0x02);
+    this->state.setRelayOn((val & 0xFF00) >> 8 == 0x02);
   }
   // On second byte changed
   if ((reg->value & 0x00FF) != (val & 0x00FF))
   {
     ESP_LOGI(TAG_HCI, "onRegSixChanged. address=%x, value=%x", reg->address.address, val);
-    this->state->setLigthOn((val & 0x00FF) == 0x14 || (val & 0x00FF) == 0x10);
-    this->state->setRelayOn((val & 0xFF00) >> 8 == 0x02 || (val & 0x00FF) == 0x14 || (val & 0x00FF) == 0x04); 
+    this->state.setLigthOn((val & 0x00FF) == 0x14 || (val & 0x00FF) == 0x10);
+    this->state.setRelayOn((val & 0xFF00) >> 8 == 0x02 || (val & 0x00FF) == 0x14 || (val & 0x00FF) == 0x04); 
   }
   return val;
 }
@@ -314,10 +328,10 @@ void HoermannGarageEngine::setCommand(bool cond, const HoermannCommand *command)
 void HoermannGarageEngine::stopDoor()
 {
   //only send impulse if door is in a moving state
-  setCommand( this->state->state == HoermannState::State::CLOSING || 
-              this->state->state == HoermannState::State::OPENING ||
-              this->state->state == HoermannState::State::MOVE_HALF ||
-              this->state->state == HoermannState::State::MOVE_VENTING , &HoermannCommand::STARTIMPULSE);
+  setCommand( this->state.state == HoermannState::State::CLOSING || 
+              this->state.state == HoermannState::State::OPENING ||
+              this->state.state == HoermannState::State::MOVE_HALF ||
+              this->state.state == HoermannState::State::MOVE_VENTING , &HoermannCommand::STARTIMPULSE);
 }
 void HoermannGarageEngine::closeDoor()
 {
@@ -341,7 +355,7 @@ void HoermannGarageEngine::ventilationPositionDoor()
 }
 void HoermannGarageEngine::turnLight(bool on)
 {
-  setCommand((on && !this->state->lightOn) || (!on && this->state->lightOn), &HoermannCommand::STARTTOGGLELAMP);
+  setCommand((on && !this->state.lightOn) || (!on && this->state.lightOn), &HoermannCommand::STARTTOGGLELAMP);
 }
 void HoermannGarageEngine::toggleLight()
 {
@@ -356,9 +370,9 @@ void HoermannGarageEngine::setPosition(int setPosition)
     openDoor();
   else if ((setPosition > 5) && (setPosition < 95))
   {
-    this->state->setGotoPosition(static_cast<float>(setPosition) / 100.0f);
-    setCommand(this->state->currentPosition < this->state->gotoPosition, &HoermannCommand::STARTOPENDOOR);
-    setCommand(this->state->currentPosition > this->state->gotoPosition, &HoermannCommand::STARTCLOSEDOOR);
+    this->state.setGotoPosition(static_cast<float>(setPosition) / 100.0f);
+    setCommand(this->state.currentPosition < this->state.gotoPosition, &HoermannCommand::STARTOPENDOOR);
+    setCommand(this->state.currentPosition > this->state.gotoPosition, &HoermannCommand::STARTCLOSEDOOR);
   }
 }
 

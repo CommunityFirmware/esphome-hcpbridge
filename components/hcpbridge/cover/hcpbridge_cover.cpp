@@ -58,7 +58,7 @@ void HCPBridgeCover::setup() {
 }
 
 void HCPBridgeCover::on_event_triggered() {
-  if (!this->parent_->engine->state->valid) {
+  if (!this->parent_->engine->state.valid) {
     if (!this->status_has_warning()) {
       ESP_LOGD(TAG,
                "HCPBridgeCover::on_event_triggered() - state is invalid, "
@@ -73,9 +73,9 @@ void HCPBridgeCover::on_event_triggered() {
     this->status_clear_warning();
   }
 
-  HoermannState *state = this->parent_->engine->state;
-  float currentPosition = state->currentPosition;
-  HoermannState::State stateValue = state->state;
+  HoermannState &state = this->parent_->engine->state;
+  float currentPosition = state.currentPosition;
+  HoermannState::State stateValue = state.state;
 
   // Determine current operation based on state and position
   switch (stateValue) {
